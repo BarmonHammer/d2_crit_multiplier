@@ -13,18 +13,18 @@ pub struct CritMultiplier(#[cfg_attr(feature = "serde", serde(default))] Option<
 
 #[derive(Error, Debug)]
 pub enum CritMultiplierErr {
-    #[error("CritMultiplier must be within -25 and 99, value provided was {}", .0)]
+    #[error("CritMultiplier must be above -25, value provided was {}", .0)]
     OutOfRange(i32),
 }
 
 ///Converts a i32 to the CritMultiplier wrapper
-/// Will return an error if the values is not between -25 and 99
+/// Will return an error if the value is not above -25
 impl TryFrom<Option<i32>> for CritMultiplier {
     type Error = CritMultiplierErr;
     fn try_from(value: Option<i32>) -> Result<Self, Self::Error> {
         match value {
             None => Ok(CritMultiplier(value)),
-            Some(x) if (-25..=99).contains(&x) => Ok(CritMultiplier(value)),
+            Some(x) if -25 <= x => Ok(CritMultiplier(value)),
             Some(x) => Err(CritMultiplierErr::OutOfRange(x)),
         }
     }
@@ -82,17 +82,10 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
     #[cfg(feature = "serde")]
     fn lower_bounds_deserialize() {
-        let _: CritMultiplier = serde_json::from_str("-26").unwrap();
-    }
-
-    #[test]
-    #[should_panic]
-    #[cfg(feature = "serde")]
-    fn upper_bounds_deserialize() {
-        let _: CritMultiplier = serde_json::from_str("100").unwrap();
+        let x: Result<CritMultiplier, _> = serde_json::from_str("-26");
+        assert!(x.is_err());
     }
 
     #[test]
@@ -109,15 +102,8 @@ mod test {
     }
 
     #[test]
-    #[should_panic]
     fn lower_bounds() {
-        let _ = CritMultiplier::try_from(Some(-26)).unwrap();
-    }
-
-    #[test]
-    #[should_panic]
-    fn upper_bounds() {
-        let _ = CritMultiplier::try_from(Some(100)).unwrap();
+        assert!(CritMultiplier::try_from(Some(-26)).is_err());
     }
 
     #[test]
